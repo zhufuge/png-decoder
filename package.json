@@ -1,0 +1,14 @@
+{
+  "name": "png-decoder",
+  "version": "0.0.1",
+  "description": "A decoder for PNG",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --reporter min"
+  },
+  "author": "zhufuge",
+  "license": "MIT",
+  "devDependencies": {
+    "mocha": "^3.4.2"
+  }
+}
