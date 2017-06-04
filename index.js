@@ -35,13 +35,18 @@ function getIHDR(fd) {
 }
 
 function getPLTE(fd, pos) {
-  
+
 }
 
 function getIDAT(fd, len, pos) {
   const data = Buffer.alloc(len);
   readSync(fd, data, 0, len, pos + 8);
 
+  const arr = [];
+  for (let v of data) {
+    arr.push(v);
+  }
+  console.log(arr);
 //  console.log(data);
 }
 
@@ -52,7 +57,7 @@ function getpHYs(fd, len, pos) {
   const x = data.readUInt32BE(0),
         y = data.readUInt32BE(4),
         i = data.readUInt8(8);
-  console.log(x, y, i);
+//  console.log(x, y, i);
 }
 
 function decode(filepath) {
@@ -72,7 +77,7 @@ function decode(filepath) {
     len = chunkLenAndType.readUInt32BE();
     type = chunkLenAndType.toString('ascii').slice(4);
 
-    console.log(len, type);
+//    console.log(len, type);
 
     switch (type) {
     case 'IDAT':
@@ -96,4 +101,7 @@ Png.decode = decode;
 
 module.exports = Png;
 
-console.log(Png.decode('./test/e.png'));
+Png.decode('./test/1.png');
+Png.decode('./test/2.png');
+Png.decode('./test/3.png');
+Png.decode('./test/4.png');
