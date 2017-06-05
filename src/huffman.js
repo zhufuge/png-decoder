@@ -1,56 +1,90 @@
+const fs = require('fs');
+
 function huffman(freq) {
-  const bTree = [];
-  for (let key in freq) {
-    bTree.push([freq[key], key]);
-  }
+  function createTree(freq) {
+    function insertTree(sub, bTree) {
+      const len = bTree.length,
+            v = sub[0];
+      if (len === 0) {
+        bTree.push(sub);
+        return ;
+      }
 
-  bTree.sort((a, b) => a[0] - b[0]);
+      let left = 0,
+          right = len - 1;
+      while (left <= right && left >= 0 && right < len) {
+        const mid = Math.floor((left + right) / 2),
+              vm = bTree[mid][0];
 
-  while (bTree.length > 1) {
-    const a = bTree.shift(),
-          b = bTree.shift();
-    createTree([a[0] + b[0], [a, b]], bTree);
-  }
-  return encodeTree(bTree[0]);
-}
+        if (v > vm) {
+          left = mid + 1;
+        } else if (v < vm){
+          right = mid - 1;
+        } else {
+          bTree.splice(mid, 0, sub);
+          return ;
+        }
+      }
 
-function createTree(sub, bTree) {
-  const len = bTree.length,
-        v = sub[0];
-  if (len === 0) {
-    bTree.push(sub);
-    return ;
-  }
-  if (v < bTree[0][0]) {
-    bTree.unshift(sub);
-    return ;
-  }
-  if (v > bTree[len - 1][0]) {
-    bTree.push(sub);
-    return ;
-  }
-
-  for (let i = 1; i < len; i++) {
-    if (v > bTree[i - 1][0] && v <= bTree[i][0]) {
-      bTree.splice(i, 0, sub);
-      return ;
+      bTree.splice(left, 0, sub);
     }
+
+    const bTree = [];
+    for (let key in freq) {
+      bTree.push([freq[key], key]);
+    }
+
+    bTree.sort((a, b) => a[0] - b[0]);
+
+    while (bTree.length > 1) {
+      const a = bTree.shift(),
+            b = bTree.shift();
+      insertTree([a[0] + b[0], [a, b]], bTree);
+    }
+    return bTree[0];
   }
-}
 
-function encodeTree(tree) {
-  const huf = {};
-  encodeTreeIter(tree, '', huf);
-  return huf;
-}
+  function encodeTree(tree) {
+    function encodeTreeIter(tree, str, huf) {
+      if (typeof tree[1] === 'string') {
+        huf[tree[1]] = str;
+      } else {
+        encodeTreeIter(tree[1][0], str + '0', huf);
+        encodeTreeIter(tree[1][1], str + '1', huf);
+      }
+    }
 
-function encodeTreeIter(tree, str, huf) {
-  if (Number.isNaN(parseInt(tree[1][1]))) {
-    huf[tree[1]] = str;
-  } else {
-    encodeTreeIter(tree[1][0], str + '0', huf);
-    encodeTreeIter(tree[1][1], str + '1', huf);
+    const huf = {};
+    encodeTreeIter(tree, '', huf);
+    return huf;
   }
+
+  return encodeTree(createTree(freq));
 }
 
-console.log(huffman({a: 6, b: 2, c: 3, d: 4, e: 5}));
+function huffmanEncode(input, output) {
+  const data = fs.readFileSync(input),
+        freq = {};
+  data.forEach(v => freq[v] = freq[v] ? freq[v] + 1 : 1);
+
+  const huf = huffman(freq),
+        fd = fs.openSync(output, 'w');
+
+  let byte = '';
+  data.forEach(v => {
+    byte += huf[v];
+    if (byte.length >= 8) {
+      const buf = Buffer.alloc(1, parseInt(byte.substr(0, 8), 2));
+      fs.writeSync(fd, buf);
+      byte = byte.substr(8);
+    }
+  });
+
+  for (let i = byte.length; i <= 8; i++) {
+    byte += '0';
+  }
+
+  fs.writeSync(fd, Buffer.alloc(1, parseInt(byte, 2)));
+}
+
+huffmanEncode('./huffman.js', 'huffman.huf');
