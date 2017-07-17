@@ -1,10 +1,10 @@
 const fs = require('fs');
 
-function huffman(freq) {
-  function createTree(freq) {
-    function insertTree(sub, bTree) {
+function huffman(probabilities) {
+  function createTree(probabilities) {
+    function binaryInsert(sub, bTree) {
       const len = bTree.length,
-            v = sub[0];
+            weight = sub[0];
       if (len === 0) {
         bTree.push(sub);
         return ;
@@ -12,13 +12,13 @@ function huffman(freq) {
 
       let left = 0,
           right = len - 1;
-      while (left <= right && left >= 0 && right < len) {
+      while (left <= right) {
         const mid = Math.floor((left + right) / 2),
-              vm = bTree[mid][0];
+              midWeight = bTree[mid][0];
 
-        if (v > vm) {
+        if (weight > midWeight) {
           left = mid + 1;
-        } else if (v < vm){
+        } else if (weight < midWeight){
           right = mid - 1;
         } else {
           bTree.splice(mid, 0, sub);
@@ -30,8 +30,8 @@ function huffman(freq) {
     }
 
     const bTree = [];
-    for (let key in freq) {
-      bTree.push([freq[key], key]);
+    for (let key in probabilities) {
+      bTree.push([probabilities[key], key]);
     }
 
     bTree.sort((a, b) => a[0] - b[0]);
@@ -39,7 +39,7 @@ function huffman(freq) {
     while (bTree.length > 1) {
       const a = bTree.shift(),
             b = bTree.shift();
-      insertTree([a[0] + b[0], [a, b]], bTree);
+      binaryInsert([a[0] + b[0], a, b], bTree);
     }
     return bTree[0];
   }
@@ -49,8 +49,8 @@ function huffman(freq) {
       if (typeof tree[1] === 'string') {
         huf[tree[1]] = str;
       } else {
-        encodeTreeIter(tree[1][0], str + '0', huf);
-        encodeTreeIter(tree[1][1], str + '1', huf);
+        encodeTreeIter(tree[1], str + '0', huf);
+        encodeTreeIter(tree[2], str + '1', huf);
       }
     }
 
@@ -59,20 +59,23 @@ function huffman(freq) {
     return huf;
   }
 
-  return encodeTree(createTree(freq));
+  return encodeTree(createTree(probabilities));
 }
 
 function huffmanEncode(input, output) {
   const data = fs.readFileSync(input),
-        freq = {};
-  data.forEach(v => freq[v] = freq[v] ? freq[v] + 1 : 1);
+        probabilities = {};
+  data.forEach(weight =>
+               probabilities[weight] = probabilities[weight]
+               ? probabilities[weight] + 1
+               : 1);
 
-  const huf = huffman(freq),
+  const huf = huffman(probabilities),
         fd = fs.openSync(output, 'w');
 
   let byte = '';
-  data.forEach(v => {
-    byte += huf[v];
+  data.forEach(weight => {
+    byte += huf[weight];
     if (byte.length >= 8) {
       const buf = Buffer.alloc(1, parseInt(byte.substr(0, 8), 2));
       fs.writeSync(fd, buf);
